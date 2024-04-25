@@ -64,7 +64,21 @@ def predict():
 
         # predict new_data
         prediction = list(loaded_model.predict(new_data))
+        if prediction[0] < -1:
+            prediction[0] = 0
+        elif -1 <= prediction[0] <= 0:
+            prediction[0] += 2
+        elif 0 < prediction[0] <= 5:
+            prediction[0] += 2.5
+        elif 5 < prediction[0] <= 20:
+            prediction[0] += 5
+        elif 20 < prediction[0] <= 30:
+            prediction[0] += 9
+        else:
+            prediction[0] += 17
+
         return prediction
+        
     elif file2.filename == '':
         # prediction for file1
         file_data = pd.read_excel(file1)
@@ -111,6 +125,21 @@ def predict():
 
         # predict file_data
         prediction_for_file = list(loaded_model.predict(new_data_for_file))
+
+        for i in range(len(prediction_for_file)):
+            if prediction_for_file[i] < -1:
+                prediction_for_file[i] = 0
+            elif -1 <= prediction_for_file[i] <= 0:
+                prediction_for_file[i] += 2
+            elif 0 < prediction_for_file[i] <= 5:
+                prediction_for_file[i] += 2.5
+            elif 5 < prediction_for_file[i] <= 20:
+                prediction_for_file[i] += 5
+            elif 20 < prediction_for_file[i] <= 30:
+                prediction_for_file[i] += 9
+            else:
+                prediction_for_file[i] += 17
+
         return prediction_for_file
     else:
         # prediction for file2
