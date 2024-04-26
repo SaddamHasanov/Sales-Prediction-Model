@@ -14,10 +14,9 @@ def Home():
 @app.route("/predict", methods = ["POST"])
 def predict():
 
-    file1 = request.files['file1']
-    file2 = request.files['file2']
+    file = request.files['file']
 
-    if file1.filename == '' and file2.filename == '':
+    if file.filename == '':
         # prediction for an individual data point
         data = dict(request.form)
 
@@ -67,7 +66,7 @@ def predict():
         if prediction[0] < -1:
             prediction[0] = 0
         elif -1 <= prediction[0] <= 0:
-            prediction[0] += 2
+            prediction[0] += 1.1
         elif 0 < prediction[0] <= 5:
             prediction[0] += 2.5
         elif 5 < prediction[0] <= 20:
@@ -79,9 +78,10 @@ def predict():
 
         return prediction
         
-    elif file2.filename == '':
-        # prediction for file1
-        file_data = pd.read_excel(file1)
+    else:
+        # prediction for file
+        file_data = pd.read_excel(file)
+        file_data = file_data[:1000]
 
         # change file_data to pandas DataFrame
         file_data = pd.DataFrame(file_data)
@@ -130,7 +130,7 @@ def predict():
             if prediction_for_file[i] < -1:
                 prediction_for_file[i] = 0
             elif -1 <= prediction_for_file[i] <= 0:
-                prediction_for_file[i] += 2
+                prediction_for_file[i] += 1.1
             elif 0 < prediction_for_file[i] <= 5:
                 prediction_for_file[i] += 2.5
             elif 5 < prediction_for_file[i] <= 20:
@@ -141,95 +141,6 @@ def predict():
                 prediction_for_file[i] += 17
 
         return prediction_for_file
-    else:
-        # prediction for file2
-        file_data_train = pd.read_excel(file2)
-        old_train_data = pd.read_csv('deploying_model/satis_2023_train.csv')
-
-        # change file_data_train to pandas DataFrame
-        file_data_train = pd.DataFrame(file_data_train)
-        old_train_data = pd.DataFrame(old_train_data)
-
-        # rename file_data_train columns
-        file_data_train.rename(columns = {'Tarih' : 'Date',
-                                          'Mağaza No' : 'Market Number',
-                                          'Stok Kodu' : 'Product Code',
-                                          'SATIS MIQDARI': 'Quantity',
-                                         },
-                                inplace = True)
-        
-        old_train_data.rename(columns = {'Tarih' : 'Date',
-                                         'Ma?aza No' : 'Market Number',
-                                         'Stok Kodu' : 'Product Code',
-                                         'SATIS MIQDARI': 'Quantity',
-                                         },
-                                inplace = True)
-    
-        # change types of columns in file_data_train
-        file_data_train['Date'] = pd.to_datetime(file_data_train['Date'], errors = 'coerce', format = 'mixed')
-        file_data_train['Date'] = file_data_train['Date'].dt.date
-        file_data_train['Date'] = pd.to_datetime(file_data_train['Date'], format = '%Y-%m-%d')
-        file_data_train['Market Number'] = file_data_train['Market Number'].astype(int)
-        file_data_train['Product Code'] = file_data_train['Product Code'].astype(str)
-        file_data_train['Quantity'] = file_data_train['Quantity'].astype(float)
-
-        old_train_data['Date'] = pd.to_datetime(old_train_data['Date'], errors = 'coerce', format = 'mixed')
-        old_train_data['Date'] = old_train_data['Date'].dt.date
-        old_train_data['Date'] = pd.to_datetime(old_train_data['Date'], format = '%d.%m.%Y')
-        old_train_data['Market Number'] = old_train_data['Market Number'].astype(int)
-        old_train_data['Product Code'] = old_train_data['Product Code'].astype(str)
-        old_train_data['Quantity'] = old_train_data['Quantity'].astype(float)
-
-        # separate "Date" column into days and month columns in file_data_train
-        file_data_train['Day'] = file_data_train['Date'].dt.day.astype(int)
-        file_data_train['Month'] = file_data_train['Date'].dt.month.astype(int)
-
-        old_train_data['Day'] = old_train_data['Date'].dt.day.astype(int)
-        old_train_data['Month'] = old_train_data['Date'].dt.month.astype(int)
-
-        # drop useless columns in file_data_train
-        file_data_train = file_data_train.drop('Date', axis = 1)
-        old_train_data = old_train_data.drop('Date', axis = 1)
-
-        # load encoder for file_data
-        with open('encoder.pkl', 'rb') as f:
-            encoder = pickle.load(f)
-
-        old_train_data['Product Code'] = old_train_data['Product Code'].map(lambda x: '<unknown>' if x not in encoder.classes_ else x)
-        encoder.classes_ = np.append(encoder.classes_, '<unknown>')
-
-        file_data_train['Product Code'] = file_data_train['Product Code'].map(lambda x: '<unknown>' if x not in encoder.classes_ else x)
-        encoder.classes_ = np.append(encoder.classes_, '<unknown>')
-
-        # transform data point using encoder in file_data_train
-        file_data_train['Product Code'] = encoder.transform(file_data_train['Product Code'])
-        old_train_data['Product Code'] = encoder.transform(old_train_data['Product Code'])
-
-        # create new DataFrame for file_data_train
-        new_data_for_file_train = pd.DataFrame({'Market Number' : file_data_train['Market Number'], 
-                                          'Product Code' : file_data_train['Product Code'], 
-                                          'Day' : file_data_train['Day'],
-                                          'Month' : file_data_train['Month'],
-                                          'Quantity' : file_data_train['Quantity']})
-        
-        old_train_data = pd.DataFrame({'Market Number' : old_train_data['Market Number'], 
-                                          'Product Code' : old_train_data['Product Code'], 
-                                          'Day' : old_train_data['Day'],
-                                          'Month' : old_train_data['Month'],
-                                          'Quantity' : old_train_data['Quantity']})
-        
-        #concat old and new data points
-        combined_df = pd.concat([old_train_data, new_data_for_file_train], axis=0)
-
-        # shuffle file_data_train
-        combined_df = combined_df.sample(frac = 1)
-
-        # split into input (x) and output (y) variables
-        x_train = combined_df.drop('Quantity', axis = 1)
-        y_train = combined_df['Quantity']
-
-        loaded_model.fit(x_train, y_train)
-        return 'Model trained successfully'
 
 
 if __name__ == '__main__':
