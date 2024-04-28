@@ -1,6 +1,8 @@
 gunicorn
 numpy
 pandas
+scikit-learn
 flask
 joblib
 pickle
+os
