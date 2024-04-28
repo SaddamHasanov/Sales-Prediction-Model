@@ -2,7 +2,6 @@ import numpy as np
 import pandas as pd
 from flask import Flask, request, jsonify, render_template
 from joblib import dump, load
-import pickle
 
 app = Flask(__name__)
 loaded_model = load('GradientBoostingRegressorModel.joblib')
@@ -46,8 +45,7 @@ def predict():
         data = data.drop('Date', axis = 1)
 
         # load encoder
-        with open('encoder.pkl', 'rb') as f:
-            encoder = pickle.load(f)
+        encoder = load('encoder.joblib')
 
         data['Product Code'] = data['Product Code'].map(lambda x: '<unknown>' if x not in encoder.classes_ else x)
         encoder.classes_ = np.append(encoder.classes_, '<unknown>')
@@ -108,8 +106,7 @@ def predict():
         file_data = file_data.drop('Date', axis = 1)
 
         # load encoder for file_data
-        with open('encoder.pkl', 'rb') as f:
-            encoder = pickle.load(f)
+        encoder = load('encoder.joblib')
 
         file_data['Product Code'] = file_data['Product Code'].map(lambda x: '<unknown>' if x not in encoder.classes_ else x)
         encoder.classes_ = np.append(encoder.classes_, '<unknown>')
@@ -144,6 +141,4 @@ def predict():
 
 
 if __name__ == '__main__':
-    pass
-else:
-    app.run()  
+    app.run(port = '4000', debug = True) 
