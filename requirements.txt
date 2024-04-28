@@ -1,8 +1,8 @@
 gunicorn
-python-3.10.9
 numpy
 pandas
 scikit-learn
 flask
 joblib
 pickle
+python-3.10.9
