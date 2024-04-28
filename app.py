@@ -143,4 +143,4 @@ def predict():
 if __name__ == '__main__':
     pass
 else:
-    app.run(port = '4000') 
+    app.run() 
