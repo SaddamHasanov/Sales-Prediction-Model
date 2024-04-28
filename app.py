@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from flask import Flask, request, jsonify, render_template
 from joblib import dump, load
+import openpyxl
 
 app = Flask(__name__)
 loaded_model = load('GradientBoostingRegressorModel.joblib')
@@ -79,7 +80,6 @@ def predict():
     else:
         # prediction for file
         file_data = pd.read_excel(file)
-        file_data = file_data[:1000]
 
         # change file_data to pandas DataFrame
         file_data = pd.DataFrame(file_data)
